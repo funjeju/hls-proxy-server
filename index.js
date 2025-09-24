@@ -46,11 +46,19 @@ app.get('/proxy-hls', (req, res) => {
 
       proxyRes.on('end', () => {
         const baseUrl = targetUrl.replace(/\/[^\/]*$/, ''); // 베이스 URL 추출
+        console.log('Processing m3u8 content, baseUrl:', baseUrl);
+        console.log('Original content preview:', data.substring(0, 200));
+
         const modifiedData = data.replace(
-          /^(?!#|https?:\/\/)(.+\.(?:m3u8|ts))$/gm,
-          `https://hls-proxy-server-wjbh.vercel.app/proxy-chunk?base=${encodeURIComponent(baseUrl)}&file=$1`
+          /^(?!#|https?:\/\/)([^\s]+\.(?:m3u8|ts))$/gm,
+          (match, filename) => {
+            const proxyUrl = `https://hls-proxy-server-wjbh.vercel.app/proxy-chunk?base=${encodeURIComponent(baseUrl)}&file=${encodeURIComponent(filename)}`;
+            console.log('Replacing:', filename, '->', proxyUrl);
+            return proxyUrl;
+          }
         );
 
+        console.log('Modified content preview:', modifiedData.substring(0, 400));
         res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
         res.setHeader('Content-Length', Buffer.byteLength(modifiedData, 'utf8'));
         res.send(modifiedData);
